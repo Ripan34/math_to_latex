@@ -1,2 +1,10 @@
-pillow
+torch
+torchvision
+torchaudio
+transformers
 datasets
+Pillow
+numpy<2.0.0
+scikit-image
+tqdm
+matplotlib
