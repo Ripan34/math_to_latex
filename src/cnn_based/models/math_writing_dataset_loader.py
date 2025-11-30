@@ -2,8 +2,13 @@ from torch.utils.data import Dataset
 from datasets import load_dataset
 
 class MathWritingDataLoader(Dataset):
-    def __init__(self, split="train", tokenizer=None, transform=None):
+    def __init__(self, split="train", tokenizer=None, transform=None, max_samples=None):
         self.data = load_dataset("deepcopy/MathWriting-Human")[split]
+        
+        # Limit dataset size
+        if max_samples is not None:
+            self.data = self.data.select(range(min(max_samples, len(self.data))))
+        
         self.tokenizer = tokenizer
         self.transform = transform
 
