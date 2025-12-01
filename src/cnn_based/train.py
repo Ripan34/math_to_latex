@@ -226,7 +226,7 @@ def train():
             targets = captions[:, 1:]
 
             # 3. Decoder forward pass
-            outputs = decoder(features, inputs)   # (B, seq_len-1, vocab)
+            outputs = decoder(features, inputs)
 
             outputs = outputs.reshape(-1, outputs.size(-1))
             targets = targets.reshape(-1)
