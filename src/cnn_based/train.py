@@ -163,7 +163,7 @@ def train():
         split="train", 
         transform=transform, 
         tokenizer=tokenizer,
-        max_samples=2000
+        max_samples=10000
     )
     
     # Add validation dataset
@@ -204,7 +204,7 @@ def train():
 
     criterion = torch.nn.CrossEntropyLoss()
     
-    for epoch in range(10):
+    for epoch in range(20):
         print(f"\n{'='*80}")
         print(f"Epoch {epoch+1}/10")
         print(f"{'='*80}")
