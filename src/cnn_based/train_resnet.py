@@ -1,7 +1,7 @@
 from torchvision import transforms
 from models.math_writing_dataset_loader import MathWritingDataLoader
 from models.latex_tokenizer import LaTeXCharTokenizer
-from models.encoder_densenet import DenseNetEncoder
+from models.encoder_resnet import ResNetEncoder
 from models.decoder import LSTMDecoder
 from torch.nn.utils.rnn import pad_sequence
 import torch
@@ -15,7 +15,6 @@ def greedy_decode(encoder, decoder, image, tokenizer, max_length=150, device='cp
     decoder.eval()
     
     with torch.no_grad():
-        # Extract features
         features = encoder(image.unsqueeze(0).to(device))
         
         current_token = torch.tensor([[tokenizer.char_to_idx[tokenizer.START_TOKEN]]], 
@@ -39,7 +38,6 @@ def greedy_decode(encoder, decoder, image, tokenizer, max_length=150, device='cp
             attn_weights = F.softmax(scores, dim=1)
             context = torch.bmm(attn_weights.unsqueeze(1), features)
             
-            # LSTM forward
             lstm_input = torch.cat([embeddings, context], dim=-1)
             lstm_out, hidden = decoder.lstm(lstm_input, hidden)
             
@@ -64,7 +62,6 @@ def calculate_cer(predicted, target):
     if len(target) == 0:
         return len(predicted)
     
-    # Create distance matrix
     d = [[0] * (len(target) + 1) for _ in range(len(predicted) + 1)]
     
     for i in range(len(predicted) + 1):
@@ -83,10 +80,6 @@ def calculate_cer(predicted, target):
 
 
 def evaluate(encoder, decoder, val_loader, tokenizer, device='cpu', num_samples=5):
-    """
-    Evaluate the model on validation set.
-    Returns: average CER, exact match accuracy, and sample predictions.
-    """
     encoder.eval()
     decoder.eval()
     
@@ -105,14 +98,12 @@ def evaluate(encoder, decoder, val_loader, tokenizer, device='cpu', num_samples=
             target_texts = batch["latex"]
             
             for i in range(images.size(0)):
-                # Generate prediction
                 predicted_tokens = greedy_decode(
                     encoder, decoder, images[i], tokenizer, device=device
                 )
                 predicted_text = tokenizer.decode(predicted_tokens)
                 target_text = target_texts[i]
                 
-                # Calculate metrics
                 cer = calculate_cer(predicted_text, target_text)
                 total_cer += cer
                 
@@ -166,7 +157,6 @@ def train():
         max_samples=5000
     )
     
-    # Add validation dataset
     val_ds = MathWritingDataLoader(
         split="val",
         transform=transform,
@@ -188,7 +178,10 @@ def train():
         collate_fn=mathwriting_collate_fn
     )
     
-    encoder = DenseNetEncoder().to(device)
+    print("Initializing ResNet50 Encoder...")
+    encoder = ResNetEncoder().to(device)
+    
+    print(f"Encoder output dimension: {encoder.output_dim}")
     
     decoder = LSTMDecoder(
         vocab_size=tokenizer.vocab_size(),
@@ -204,9 +197,12 @@ def train():
 
     criterion = torch.nn.CrossEntropyLoss()
     
+    print("\nStarting training with ResNet50 encoder...")
+    print("="*80)
+    
     for epoch in range(20):
         print(f"\n{'='*80}")
-        print(f"Epoch {epoch+1}/10")
+        print(f"Epoch {epoch+1}/20")
         print(f"{'='*80}")
         
         encoder.train()
@@ -219,13 +215,11 @@ def train():
             images = batch["images"].to(device)
             captions = batch["token_ids"].to(device)
 
-            # 1. Extract features from encoder
             features = encoder(images)
 
             inputs = captions[:, :-1]
             targets = captions[:, 1:]
 
-            # 3. Decoder forward pass
             outputs = decoder(features, inputs)
 
             outputs = outputs.reshape(-1, outputs.size(-1))
@@ -243,7 +237,6 @@ def train():
         avg_loss = epoch_loss / num_batches
         print(f"Average Training Loss: {avg_loss:.4f}")
         
-    # Evaluate
     evaluate(encoder, decoder, val_loader, tokenizer, device=device, num_samples=3)
     print("\nTraining completed")
     
@@ -274,8 +267,8 @@ def mathwriting_collate_fn(batch):
 if __name__ == "__main__":
     encoder, decoder, tokenizer = train()
     
-    # Save the trained models
-    print("\nSaving models...")
-    torch.save(encoder.state_dict(), "encoder_checkpoint.pth")
-    torch.save(decoder.state_dict(), "decoder_checkpoint.pth")
-    print("Models saved as encoder_checkpoint.pth and decoder_checkpoint.pth")
+    print("\nSaving ResNet models...")
+    torch.save(encoder.state_dict(), "encoder_resnet_checkpoint.pth")
+    torch.save(decoder.state_dict(), "decoder_resnet_checkpoint.pth")
+    print("Models saved as encoder_resnet_checkpoint.pth and decoder_resnet_checkpoint.pth")
+
