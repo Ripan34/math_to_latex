@@ -8,3 +8,6 @@ numpy<2.0.0
 scikit-image
 tqdm
 matplotlib
+timm
+pyyaml
+scipy

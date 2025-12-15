@@ -1,0 +1,17 @@
+model:
+  encoder_type: "swin"
+  encoder_name: "microsoft/swin-tiny-patch4-window7-224"
+  attention_type: "additive"
+  d_model: 512
+  num_layers: 4
+  num_heads: 8
+
+training:
+  batch_size: 16
+  lr: 1e-4
+  num_epochs: 1
+  max_len: 300
+
+data:
+  image_size: 224
+  dataset_name: "deepcopy/MathWriting-human"
